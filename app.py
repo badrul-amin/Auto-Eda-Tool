@@ -17,11 +17,7 @@ st.markdown("""
 <style>
   .stApp { background: #f4f6f9; }
   .block-container { padding-top: 1.5rem !important; }
-  [data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e8ecf0; padding-top: 0 !important; }
-  [data-testid="stSidebarCollapseButton"] { background-color: #378ADD !important; border-radius: 0 8px 8px 0 !important; color: white !important; display: flex !important; visibility: visible !important; }
-  [data-testid="stSidebarCollapseButton"] svg { fill: white !important; color: white !important; }
-  #MainMenu, footer { visibility: hidden; }
-  header { visibility: hidden; }
+  [data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e8ecf0; }
   [data-testid="stMetric"] { background: #ffffff; border: 1px solid #e8ecf0; border-radius: 12px; padding: 16px 18px !important; }
   [data-testid="stMetricLabel"] { font-size: 12px !important; color: #888 !important; }
   [data-testid="stMetricValue"] { font-size: 24px !important; font-weight: 500 !important; }
@@ -32,10 +28,10 @@ st.markdown("""
   .stButton > button:hover { background: #2567b8 !important; }
   .stDownloadButton > button { border-radius: 8px; font-size: 13px; font-weight: 500; padding: 10px 20px; background: #1D9E75; color: white !important; border: none; }
   .stDownloadButton > button:hover { background: #157a5a !important; }
-  .streamlit-expanderHeader { background: #ffffff !important; border-radius: 10px !important; font-size: 13px; font-weight: 500; border: 1px solid #e8ecf0 !important; }
+  .streamlit-expanderHeader { background: #ffffff !important; border-radius: 10px !important; font-size: 13px; font-weight: 500; }
+  #MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
-
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
