@@ -11,25 +11,143 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="Auto EDA", layout="wide", initial_sidebar_state="expanded")
 
 
-# ── Custom CSS ────────────────────────────────────────────────────────────────
+# ── CSS ───────────────────────────────────────────────────────────────────────
 
 st.markdown("""
 <style>
-  .stApp { background: #f8f9fb; }
-  [data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #eeeeee; }
+  /* Base */
+  .stApp { background: #f4f6f9; }
+  .block-container { padding-top: 1.5rem !important; }
+
+  /* Sidebar */
+  [data-testid="stSidebar"] {
+    background: #ffffff;
+    border-right: 1px solid #e8ecf0;
+    padding-top: 0 !important;
+  }
+  [data-testid="stSidebar"] .block-container { padding-top: 0 !important; }
+
+  /* Sidebar toggle button — always visible */
+  [data-testid="stSidebarCollapseButton"] {
+    background: #378ADD !important;
+    border-radius: 0 8px 8px 0 !important;
+    color: white !important;
+  }
+
+  /* Cards */
+  .card {
+    background: #ffffff;
+    border: 1px solid #e8ecf0;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .card-blue  { border-left: 4px solid #378ADD; }
+  .card-green { border-left: 4px solid #1D9E75; }
+  .card-warn  { border-left: 4px solid #E8963A; }
+  .card-red   { border-left: 4px solid #E05A3A; }
+
+  /* Step indicator */
+  .step-wrap { display: flex; gap: 0; margin-bottom: 28px; }
+  .step {
+    flex: 1; text-align: center; padding: 10px 0;
+    font-size: 12px; font-weight: 500;
+    background: #eef1f5; color: #999;
+    border-right: 1px solid #dde2e8;
+  }
+  .step:first-child { border-radius: 10px 0 0 10px; }
+  .step:last-child  { border-radius: 0 10px 10px 0; border-right: none; }
+  .step.done  { background: #d4eaff; color: #185FA5; }
+  .step.active { background: #378ADD; color: white; }
+
+  /* Metrics */
   [data-testid="stMetric"] {
-    background: #ffffff; border: 1px solid #eeeeee;
-    border-radius: 10px; padding: 14px 18px;
+    background: #ffffff;
+    border: 1px solid #e8ecf0;
+    border-radius: 12px;
+    padding: 16px 18px !important;
   }
-  .stTabs [data-baseweb="tab"] { font-size: 13px; font-weight: 500; color: #888; padding: 8px 20px; }
-  .stTabs [aria-selected="true"] { color: #1a1a1a; border-bottom: 2px solid #378ADD; }
-  .stDownloadButton > button, .stButton > button {
+  [data-testid="stMetricLabel"] { font-size: 12px !important; color: #888 !important; }
+  [data-testid="stMetricValue"] { font-size: 24px !important; font-weight: 500 !important; }
+
+  /* Tabs */
+  .stTabs [data-baseweb="tab-list"] {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 4px;
+    border: 1px solid #e8ecf0;
+    gap: 2px;
+  }
+  .stTabs [data-baseweb="tab"] {
+    font-size: 13px; font-weight: 500; color: #888;
+    padding: 8px 18px; border-radius: 8px;
+  }
+  .stTabs [aria-selected="true"] {
+    background: #378ADD !important;
+    color: white !important;
+  }
+
+  /* Buttons */
+  .stButton > button {
     border-radius: 8px; font-size: 13px; font-weight: 500;
-    padding: 8px 20px; background: #378ADD; color: white; border: none;
+    padding: 8px 20px; background: #378ADD;
+    color: white !important; border: none; width: 100%;
   }
-  .stDownloadButton > button:hover, .stButton > button:hover { background: #2567b8; }
-  .streamlit-expanderHeader { font-size: 13px; font-weight: 500; background: #ffffff; border-radius: 8px; }
+  .stButton > button:hover { background: #2567b8 !important; }
+  .stDownloadButton > button {
+    border-radius: 8px; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; background: #1D9E75;
+    color: white !important; border: none;
+  }
+  .stDownloadButton > button:hover { background: #157a5a !important; }
+
+  /* Expander */
+  .streamlit-expanderHeader {
+    background: #ffffff !important;
+    border-radius: 10px !important;
+    font-size: 13px; font-weight: 500;
+    border: 1px solid #e8ecf0 !important;
+  }
+
+  /* File uploader */
+  [data-testid="stFileUploader"] {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 2px dashed #c8d4e0 !important;
+    padding: 12px;
+  }
+
+  /* Selectbox / input */
+  [data-testid="stSelectbox"], [data-testid="stTextInput"] {
+    background: #ffffff;
+    border-radius: 8px;
+  }
+
+  /* Hide default chrome */
   #MainMenu, footer, header { visibility: hidden; }
+
+  /* Provider badge */
+  .provider-badge {
+    display: inline-block;
+    background: #d4eaff; color: #185FA5;
+    border-radius: 20px; padding: 3px 12px;
+    font-size: 12px; font-weight: 500;
+    margin-left: 8px;
+  }
+
+  /* Info callout */
+  .callout {
+    background: #eef6ff; border: 1px solid #c8dff7;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 13px; color: #185FA5; margin: 12px 0;
+  }
+
+  /* Insight row */
+  .insight {
+    background: #ffffff; border: 1px solid #e8ecf0;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 13px; margin-bottom: 8px;
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -38,54 +156,60 @@ st.markdown("""
 
 NA_VALUES = [
     "", " ", "NA", "N/A", "n/a", "na", "NULL", "null",
-    "None", "none", "NaN", "nan", "-", "--", "?", "missing",
-    "MISSING", "unknown", "Unknown", "UNK", "#N/A", "#NULL!",
+    "None", "none", "NaN", "nan", "-", "--", "?",
+    "missing", "MISSING", "unknown", "Unknown", "UNK", "#N/A", "#NULL!",
 ]
-
 ID_HINTS   = ["id", "uuid", "guid", "key", "ref", "index", "no", "num", "number", "code"]
 DATE_HINTS = ["date", "time", "datetime", "timestamp", "created", "updated", "at", "on"]
 CAT_HINTS  = ["type", "status", "category", "flag", "gender", "sex", "store", "region",
               "country", "zip", "postal", "grade", "class", "label", "group",
               "quarter", "week", "segment", "tier", "level", "rank", "phase"]
 
+PROVIDERS = {
+    "Gemini":             {"models": ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"], "key_hint": "AIza..."},
+    "OpenAI / ChatGPT":   {"models": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],                 "key_hint": "sk-..."},
+    "Claude (Anthropic)": {"models": ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"],          "key_hint": "sk-ant-..."},
+    "Grok (xAI)":         {"models": ["grok-3-mini", "grok-3"],                                   "key_hint": "xai-..."},
+}
 
-# ── LLM Caller ───────────────────────────────────────────────────────────────
 
-def call_llm(prompt: str, provider: str, api_key: str, model: str) -> str:
+# ── Session state defaults ────────────────────────────────────────────────────
+
+for key, val in {
+    "provider": "Gemini",
+    "model":    "gemini-1.5-flash",
+    "api_key":  "",
+    "step":     1,
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
+
+
+# ── LLM caller ────────────────────────────────────────────────────────────────
+
+def call_llm(prompt, provider, api_key, model):
     if provider == "Gemini":
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        m = genai.GenerativeModel(model)
-        return m.generate_content(prompt).text
+        return genai.GenerativeModel(model).generate_content(prompt).text
 
     elif provider == "OpenAI / ChatGPT":
         from openai import OpenAI
-        client = OpenAI(api_key=api_key)
-        r = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1500,
-        )
+        r = OpenAI(api_key=api_key).chat.completions.create(
+            model=model, messages=[{"role":"user","content":prompt}], max_tokens=1500)
         return r.choices[0].message.content
 
     elif provider == "Claude (Anthropic)":
         import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        r = client.messages.create(
-            model=model,
-            max_tokens=1500,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        r = anthropic.Anthropic(api_key=api_key).messages.create(
+            model=model, max_tokens=1500,
+            messages=[{"role":"user","content":prompt}])
         return r.content[0].text
 
     elif provider == "Grok (xAI)":
-        from openai import OpenAI  # Grok uses OpenAI-compatible API
-        client = OpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
-        r = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1500,
-        )
+        from openai import OpenAI
+        r = OpenAI(api_key=api_key, base_url="https://api.x.ai/v1").chat.completions.create(
+            model=model, messages=[{"role":"user","content":prompt}], max_tokens=1500)
         return r.choices[0].message.content
 
     raise ValueError(f"Unknown provider: {provider}")
@@ -94,7 +218,7 @@ def call_llm(prompt: str, provider: str, api_key: str, model: str) -> str:
 # ── Profiler ──────────────────────────────────────────────────────────────────
 
 @st.cache_data
-def profile_csv(uploaded_file) -> tuple:
+def profile_csv(uploaded_file):
     df = pd.read_csv(uploaded_file, na_values=NA_VALUES, keep_default_na=True)
 
     for col in df.select_dtypes(include="object").columns:
@@ -110,9 +234,9 @@ def profile_csv(uploaded_file) -> tuple:
 
     n_rows  = len(df)
     profile = {
-        "shape": list(df.shape),
-        "columns": {},
-        "missing": {c: int(df[c].isnull().sum()) for c in df.columns},
+        "shape":     list(df.shape),
+        "columns":   {},
+        "missing":   {c: int(df[c].isnull().sum()) for c in df.columns},
         "duplicates": int(df.duplicated().sum()),
         "memory_mb": round(df.memory_usage(deep=True).sum() / 1e6, 2),
     }
@@ -148,8 +272,7 @@ def profile_csv(uploaded_file) -> tuple:
             skewness   = round(float(series.skew()), 3)
             skew_label = "right-skewed" if skewness > 1 else "left-skewed" if skewness < -1 else "symmetric"
             profile["columns"][col] = {
-                "type": "numeric",
-                "stats": series.describe().round(4).to_dict(),
+                "type": "numeric", "stats": series.describe().round(4).to_dict(),
                 "skewness": skewness, "skew_label": skew_label,
                 "outliers": n_out,
                 "outlier_pct": round(n_out / max(len(series), 1) * 100, 1),
@@ -165,8 +288,7 @@ def profile_csv(uploaded_file) -> tuple:
         else:
             profile["columns"][col] = {
                 "type": "id" if (looks_like_id or name_is_id) else "categorical",
-                "unique": n_unique,
-                "unique_pct": round(unique_ratio * 100, 1),
+                "unique": n_unique, "unique_pct": round(unique_ratio * 100, 1),
                 "top5": df[col].astype(str).value_counts().head(5).to_dict(),
                 "nulls": n_null, "null_pct": null_pct,
             }
@@ -174,169 +296,23 @@ def profile_csv(uploaded_file) -> tuple:
     return df, profile
 
 
-# ── Target Analysis ───────────────────────────────────────────────────────────
-
-def analyze_target(df, profile, target_col):
-    meta    = profile["columns"].get(target_col, {})
-    t_type  = meta.get("type", "categorical")
-    charts  = []
-    insights = []
-
-    task = "classification" if t_type in ("binary", "categorical") or \
-           (t_type == "numeric" and df[target_col].nunique() <= 15) else "regression"
-
-    if task == "classification":
-        vc = df[target_col].value_counts().reset_index()
-        vc.columns = [target_col, "count"]
-        vc["pct"] = (vc["count"] / len(df) * 100).round(1)
-        fig = px.bar(vc, x=target_col, y="count",
-                     text=vc["pct"].astype(str) + "%",
-                     color_discrete_sequence=["#378ADD"],
-                     title=f"Target distribution: {target_col}")
-        fig.update_layout(**clean_layout())
-        charts.append(("target_dist", target_col, fig))
-        ratios = vc["count"] / vc["count"].sum()
-        if ratios.min() < 0.1:
-            insights.append(f"⚠️ **Class imbalance** — minority class is only {round(ratios.min()*100,1)}%. Consider SMOTE or class weighting.")
-        else:
-            insights.append("✅ Classes are reasonably balanced.")
-    else:
-        fig = px.histogram(df[target_col].dropna(), nbins=40,
-                           color_discrete_sequence=["#7F77DD"],
-                           title=f"Target distribution: {target_col}")
-        fig.update_layout(**clean_layout())
-        charts.append(("target_dist", target_col, fig))
-        skew = round(float(df[target_col].skew()), 3)
-        if abs(skew) > 1:
-            insights.append(f"⚠️ **Target is skewed** ({skew}) — consider log-transforming `{target_col}`.")
-        else:
-            insights.append(f"✅ Target looks reasonable (skewness: {skew}).")
-
-    num_cols = [c for c, m in profile["columns"].items() if m["type"] == "numeric" and c != target_col]
-    cat_cols = [c for c, m in profile["columns"].items() if m["type"] in ("categorical", "binary") and c != target_col]
-
-    if num_cols:
-        try:
-            corr_vals = df[num_cols + [target_col]].corr()[target_col].drop(target_col).abs().sort_values(ascending=False)
-            top_corr  = corr_vals.head(10).reset_index()
-            top_corr.columns = ["feature", "correlation"]
-            fig = px.bar(top_corr, x="correlation", y="feature", orientation="h",
-                         color_discrete_sequence=["#1D9E75"],
-                         title=f"Feature correlation with {target_col}")
-            fig.update_layout(**clean_layout())
-            charts.append(("feature_corr", "correlation", fig))
-            if len(corr_vals) > 0:
-                top_feat = corr_vals.index[0]
-                insights.append(f"🔵 **Strongest predictor:** `{top_feat}` (correlation: {round(corr_vals[top_feat], 3)})")
-        except Exception:
-            pass
-
-    for col in cat_cols[:3]:
-        try:
-            if task == "regression":
-                grp = df.groupby(col)[target_col].mean().reset_index().sort_values(target_col, ascending=False).head(10)
-                fig = px.bar(grp, x=target_col, y=col, orientation="h",
-                             color_discrete_sequence=["#E8963A"],
-                             title=f"Mean {target_col} by {col}")
-            else:
-                grp = df.groupby([col, target_col]).size().reset_index(name="count")
-                fig = px.bar(grp, x=col, y="count", color=str(target_col),
-                             barmode="group", title=f"{col} vs {target_col}")
-            fig.update_layout(**clean_layout())
-            charts.append(("cat_vs_target", col, fig))
-        except Exception:
-            pass
-
-    return task, charts, insights
-
-
-# ── Auto Clean ────────────────────────────────────────────────────────────────
-
-def auto_clean(df, profile, target_col=None):
-    cleaned = df.copy()
-    log     = []
-
-    id_cols = [c for c, m in profile["columns"].items() if m["type"] == "id"]
-    if id_cols:
-        cleaned.drop(columns=id_cols, inplace=True, errors="ignore")
-        log.append(f"🗑 Dropped ID columns: {', '.join(id_cols)}")
-
-    high_missing = [c for c, m in profile["columns"].items()
-                    if m["null_pct"] > 60 and c != target_col]
-    if high_missing:
-        cleaned.drop(columns=high_missing, inplace=True, errors="ignore")
-        log.append(f"🗑 Dropped high-missing columns (>60%): {', '.join(high_missing)}")
-
-    n_before = len(cleaned)
-    cleaned.drop_duplicates(inplace=True)
-    if len(cleaned) < n_before:
-        log.append(f"🗑 Dropped {n_before - len(cleaned)} duplicate rows")
-
-    for col in [c for c in cleaned.columns
-                if c in profile["columns"] and profile["columns"][c]["type"] == "numeric"
-                and cleaned[c].isnull().any()]:
-        median = cleaned[col].median()
-        cleaned[col].fillna(median, inplace=True)
-        log.append(f"🔧 Imputed `{col}` with median ({round(median, 3)})")
-
-    for col in [c for c in cleaned.columns
-                if c in profile["columns"] and profile["columns"][c]["type"] in ("categorical", "binary")
-                and cleaned[c].isnull().any()]:
-        mode = cleaned[col].mode()[0]
-        cleaned[col].fillna(mode, inplace=True)
-        log.append(f"🔧 Imputed `{col}` with mode ('{mode}')")
-
-    for col in [c for c in cleaned.columns
-                if c in profile["columns"]
-                and profile["columns"][c]["type"] == "numeric"
-                and profile["columns"][c]["skewness"] > 1
-                and (cleaned[c] > 0).all()
-                and c != target_col]:
-        cleaned[f"{col}_log"] = np.log1p(cleaned[col])
-        log.append(f"📐 Created `{col}_log` (log-transform)")
-
-    for col in [c for c in cleaned.columns
-                if c in profile["columns"] and profile["columns"][c]["type"] == "binary"
-                and c != target_col]:
-        vals = cleaned[col].dropna().unique()
-        if set(vals) != {0, 1}:
-            cleaned[col] = (cleaned[col] == vals[0]).astype(int)
-            log.append(f"🔢 Encoded `{col}` as 0/1")
-
-    for col in [c for c in cleaned.columns
-                if c in profile["columns"] and profile["columns"][c]["type"] == "datetime"]:
-        try:
-            parsed = pd.to_datetime(cleaned[col], errors="coerce")
-            cleaned[f"{col}_year"]  = parsed.dt.year
-            cleaned[f"{col}_month"] = parsed.dt.month
-            cleaned[f"{col}_dow"]   = parsed.dt.dayofweek
-            cleaned.drop(columns=[col], inplace=True)
-            log.append(f"📅 Extracted year/month/dow from `{col}`")
-        except Exception:
-            pass
-
-    return cleaned, log
-
-
 # ── Charts ────────────────────────────────────────────────────────────────────
 
 def clean_layout(height=280):
     return dict(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="system-ui, sans-serif", size=12, color="#555"),
         title=dict(font=dict(size=13), x=0),
         margin=dict(l=0, r=0, t=36, b=0),
         xaxis=dict(showgrid=True, gridcolor="#f0f0f0", zeroline=False),
         yaxis=dict(showgrid=False, zeroline=False),
-        showlegend=False,
-        height=height,
+        showlegend=False, height=height,
     )
 
 
 @st.cache_data
 def generate_charts(_df, profile):
-    charts   = []
+    charts    = []
     num_cols  = [c for c, m in profile["columns"].items() if m["type"] == "numeric"]
     cat_cols  = [c for c, m in profile["columns"].items() if m["type"] == "categorical"]
     bin_cols  = [c for c, m in profile["columns"].items() if m["type"] == "binary"]
@@ -348,7 +324,6 @@ def generate_charts(_df, profile):
                                    marker_color="#378ADD", opacity=0.85, name=col))
         fig.update_layout(**clean_layout(), title=f"Distribution: {col}")
         charts.append(("numeric", col, fig))
-
         fig2 = go.Figure()
         fig2.add_trace(go.Box(x=_df[col].dropna(), marker_color="#378ADD", boxmean=True, name=col))
         fig2.update_layout(**clean_layout(height=200), title=f"Boxplot: {col}")
@@ -403,11 +378,148 @@ def generate_charts(_df, profile):
     return charts
 
 
+# ── Target Analysis ───────────────────────────────────────────────────────────
+
+def analyze_target(df, profile, target_col):
+    meta     = profile["columns"].get(target_col, {})
+    t_type   = meta.get("type", "categorical")
+    charts   = []
+    insights = []
+
+    task = "classification" if t_type in ("binary","categorical") or \
+           (t_type == "numeric" and df[target_col].nunique() <= 15) else "regression"
+
+    if task == "classification":
+        vc = df[target_col].value_counts().reset_index()
+        vc.columns = [target_col, "count"]
+        vc["pct"] = (vc["count"] / len(df) * 100).round(1)
+        fig = px.bar(vc, x=target_col, y="count",
+                     text=vc["pct"].astype(str) + "%",
+                     color_discrete_sequence=["#378ADD"],
+                     title=f"Target distribution: {target_col}")
+        fig.update_layout(**clean_layout())
+        charts.append(("target_dist", target_col, fig))
+        ratios = vc["count"] / vc["count"].sum()
+        if ratios.min() < 0.1:
+            insights.append(f"⚠️ **Class imbalance** — minority class is {round(ratios.min()*100,1)}%. Consider SMOTE or class weighting.")
+        else:
+            insights.append("✅ Classes are reasonably balanced.")
+    else:
+        fig = px.histogram(df[target_col].dropna(), nbins=40,
+                           color_discrete_sequence=["#7F77DD"],
+                           title=f"Target distribution: {target_col}")
+        fig.update_layout(**clean_layout())
+        charts.append(("target_dist", target_col, fig))
+        skew = round(float(df[target_col].skew()), 3)
+        insights.append(f"{'⚠️ Target is skewed (' + str(skew) + '). Consider log-transform.' if abs(skew) > 1 else '✅ Target distribution looks reasonable (skewness: ' + str(skew) + ').'}")
+
+    num_cols = [c for c, m in profile["columns"].items() if m["type"] == "numeric" and c != target_col]
+    cat_cols = [c for c, m in profile["columns"].items() if m["type"] in ("categorical","binary") and c != target_col]
+
+    if num_cols:
+        try:
+            corr_vals = df[num_cols + [target_col]].corr()[target_col].drop(target_col).abs().sort_values(ascending=False)
+            top_corr  = corr_vals.head(10).reset_index()
+            top_corr.columns = ["feature", "correlation"]
+            fig = px.bar(top_corr, x="correlation", y="feature", orientation="h",
+                         color_discrete_sequence=["#1D9E75"],
+                         title=f"Feature correlation with {target_col}")
+            fig.update_layout(**clean_layout())
+            charts.append(("feature_corr", "correlation", fig))
+            if len(corr_vals) > 0:
+                top_feat = corr_vals.index[0]
+                insights.append(f"🔵 **Strongest predictor:** `{top_feat}` (r = {round(corr_vals[top_feat], 3)})")
+        except Exception:
+            pass
+
+    for col in cat_cols[:3]:
+        try:
+            if task == "regression":
+                grp = df.groupby(col)[target_col].mean().reset_index().sort_values(target_col, ascending=False).head(10)
+                fig = px.bar(grp, x=target_col, y=col, orientation="h",
+                             color_discrete_sequence=["#E8963A"],
+                             title=f"Mean {target_col} by {col}")
+            else:
+                grp = df.groupby([col, target_col]).size().reset_index(name="count")
+                fig = px.bar(grp, x=col, y="count", color=str(target_col),
+                             barmode="group", title=f"{col} vs {target_col}")
+            fig.update_layout(**clean_layout())
+            charts.append(("cat_vs_target", col, fig))
+        except Exception:
+            pass
+
+    return task, charts, insights
+
+
+# ── Auto Clean ────────────────────────────────────────────────────────────────
+
+def auto_clean(df, profile, target_col=None):
+    cleaned = df.copy()
+    log     = []
+
+    id_cols = [c for c, m in profile["columns"].items() if m["type"] == "id"]
+    if id_cols:
+        cleaned.drop(columns=id_cols, inplace=True, errors="ignore")
+        log.append(f"🗑 Dropped ID columns: {', '.join(id_cols)}")
+
+    high_miss = [c for c, m in profile["columns"].items() if m["null_pct"] > 60 and c != target_col]
+    if high_miss:
+        cleaned.drop(columns=high_miss, inplace=True, errors="ignore")
+        log.append(f"🗑 Dropped columns with >60% missing: {', '.join(high_miss)}")
+
+    n_before = len(cleaned)
+    cleaned.drop_duplicates(inplace=True)
+    if len(cleaned) < n_before:
+        log.append(f"🗑 Dropped {n_before - len(cleaned)} duplicate rows")
+
+    for col in [c for c in cleaned.columns if c in profile["columns"]
+                and profile["columns"][c]["type"] == "numeric"
+                and cleaned[c].isnull().any()]:
+        med = cleaned[col].median()
+        cleaned[col].fillna(med, inplace=True)
+        log.append(f"🔧 Imputed `{col}` with median ({round(med,3)})")
+
+    for col in [c for c in cleaned.columns if c in profile["columns"]
+                and profile["columns"][c]["type"] in ("categorical","binary")
+                and cleaned[c].isnull().any()]:
+        mode = cleaned[col].mode()[0]
+        cleaned[col].fillna(mode, inplace=True)
+        log.append(f"🔧 Imputed `{col}` with mode ('{mode}')")
+
+    for col in [c for c in cleaned.columns if c in profile["columns"]
+                and profile["columns"][c]["type"] == "numeric"
+                and profile["columns"][c]["skewness"] > 1
+                and (cleaned[c] > 0).all() and c != target_col]:
+        cleaned[f"{col}_log"] = np.log1p(cleaned[col])
+        log.append(f"📐 Log-transformed `{col}` → `{col}_log`")
+
+    for col in [c for c in cleaned.columns if c in profile["columns"]
+                and profile["columns"][c]["type"] == "binary" and c != target_col]:
+        vals = cleaned[col].dropna().unique()
+        if set(vals) != {0,1}:
+            cleaned[col] = (cleaned[col] == vals[0]).astype(int)
+            log.append(f"🔢 Encoded `{col}` as 0/1")
+
+    for col in [c for c in cleaned.columns if c in profile["columns"]
+                and profile["columns"][c]["type"] == "datetime"]:
+        try:
+            parsed = pd.to_datetime(cleaned[col], errors="coerce")
+            cleaned[f"{col}_year"]  = parsed.dt.year
+            cleaned[f"{col}_month"] = parsed.dt.month
+            cleaned[f"{col}_dow"]   = parsed.dt.dayofweek
+            cleaned.drop(columns=[col], inplace=True)
+            log.append(f"📅 Extracted year/month/dow from `{col}`")
+        except Exception:
+            pass
+
+    return cleaned, log
+
+
 # ── LLM Summary ───────────────────────────────────────────────────────────────
 
 @st.cache_data
 def generate_summary(profile, target_col, provider, api_key, model):
-    target = f"The user has selected `{target_col}` as the target variable." if target_col else "No target variable selected."
+    target = f"The user selected `{target_col}` as the target variable." if target_col else "No target variable selected."
     prompt = f"""You are a senior data scientist writing an EDA report.
 
 {target}
@@ -415,7 +527,7 @@ def generate_summary(profile, target_col, provider, api_key, model):
 Dataset profile:
 {json.dumps(profile, indent=2)}
 
-Write a concise but thorough EDA report using markdown with these sections:
+Write a concise but thorough EDA report in markdown with these sections:
 
 ## Overview
 Shape, memory, column type breakdown, overall data quality score (0-100).
@@ -449,7 +561,7 @@ def fig_to_b64(fig):
 
 
 def build_html_report(df, profile, summary, charts, target_col=None):
-    charts_html   = ""
+    charts_html = ""
     for i in range(0, len(charts), 2):
         charts_html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
         for _, col, fig in charts[i:i+2]:
@@ -462,7 +574,7 @@ def build_html_report(df, profile, summary, charts, target_col=None):
     missing_total = sum(profile["missing"].values())
     target_line   = f"&nbsp;·&nbsp; Target: <strong>{target_col}</strong>" if target_col else ""
 
-    html = f"""<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
 <style>
   body {{ font-family: system-ui, sans-serif; max-width: 960px; margin: 40px auto; padding: 0 28px; color: #1a1a1a; line-height: 1.7; }}
@@ -474,11 +586,9 @@ def build_html_report(df, profile, summary, charts, target_col=None):
   .metric-val {{ font-size: 26px; font-weight: 500; margin: 0; }}
   .metric-lbl {{ font-size: 12px; color: #888; margin: 4px 0 0; }}
   .summary {{ font-size: 14px; background: #f9f9f9; padding: 20px 24px; border-radius: 8px; }}
-  ul {{ margin: 6px 0; padding-left: 20px; }}
-  li {{ margin-bottom: 4px; font-size: 14px; }}
+  ul {{ margin: 6px 0; padding-left: 20px; }} li {{ margin-bottom: 4px; font-size: 14px; }}
   code {{ background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 13px; }}
-</style>
-</head><body>
+</style></head><body>
 <h1>EDA Report</h1>
 <div class="meta">{df.shape[0]:,} rows &nbsp;·&nbsp; {df.shape[1]} columns &nbsp;·&nbsp; {profile.get("memory_mb","?")} MB{target_line}</div>
 <div class="metrics">
@@ -489,54 +599,42 @@ def build_html_report(df, profile, summary, charts, target_col=None):
 </div>
 <h2>AI Analysis</h2>
 <div class="summary">{summary.replace(chr(10), "<br>")}</div>
-<h2>Visualizations</h2>
-{charts_html}
+<h2>Visualizations</h2>{charts_html}
 </body></html>"""
-
-    return html
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
-PROVIDERS = {
-    "Gemini":            {"models": ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"], "key_hint": "AIza..."},
-    "OpenAI / ChatGPT":  {"models": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],                "key_hint": "sk-..."},
-    "Claude (Anthropic)":{"models": ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"],         "key_hint": "sk-ant-..."},
-    "Grok (xAI)":        {"models": ["grok-3-mini", "grok-3"],                                  "key_hint": "xai-..."},
-}
-
 with st.sidebar:
-    st.markdown("### ⚙️ Settings")
-    st.divider()
+    st.markdown("""
+    <div style="background:#378ADD;padding:20px 20px 16px;margin:-1rem -1rem 1.5rem">
+      <div style="font-size:18px;font-weight:600;color:white">📊 Auto EDA</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px">Smart dataset explorer</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    uploaded = st.file_uploader("Upload CSV", type=["csv"], label_visibility="collapsed")
-
-    target_col = None
-    do_clean   = False
-
-    if uploaded:
-        st.markdown("**Target variable**")
-        df_peek = pd.read_csv(uploaded, nrows=5)
-        uploaded.seek(0)
-        col_options = ["— none —"] + list(df_peek.columns)
-        target_sel  = st.selectbox("Target column", col_options, label_visibility="collapsed")
-        target_col  = None if target_sel == "— none —" else target_sel
-
-        st.markdown("**Auto-clean**")
-        do_clean = st.toggle("Clean & prepare dataset", value=False)
-        if do_clean:
-            st.caption("Drops IDs, imputes missing, encodes binary, extracts dates, log-transforms skewed columns.")
+    # ── Step 1: Upload ──
+    st.markdown("**① Upload your dataset**")
+    uploaded = st.file_uploader("CSV file", type=["csv"], label_visibility="collapsed")
 
     st.divider()
-    st.markdown("**AI Provider**")
-    provider = st.selectbox("Provider", list(PROVIDERS.keys()), label_visibility="collapsed")
-    model    = st.selectbox("Model", PROVIDERS[provider]["models"], label_visibility="collapsed")
-    api_key  = st.text_input(
-        "API Key",
-        type="password",
-        placeholder=PROVIDERS[provider]["key_hint"],
-        label_visibility="collapsed",
-    )
+
+    # ── Step 2: AI Provider ──
+    st.markdown("**② AI provider**")
+    provider = st.selectbox("Provider", list(PROVIDERS.keys()),
+                            index=list(PROVIDERS.keys()).index(st.session_state.provider),
+                            label_visibility="collapsed")
+    st.session_state.provider = provider
+
+    model = st.selectbox("Model", PROVIDERS[provider]["models"],
+                         label_visibility="collapsed")
+    st.session_state.model = model
+
+    api_key = st.text_input("API Key", type="password",
+                            placeholder=PROVIDERS[provider]["key_hint"],
+                            value=st.session_state.api_key,
+                            label_visibility="collapsed")
+    st.session_state.api_key = api_key
 
     key_links = {
         "Gemini":             "https://aistudio.google.com",
@@ -544,46 +642,134 @@ with st.sidebar:
         "Claude (Anthropic)": "https://console.anthropic.com",
         "Grok (xAI)":         "https://console.x.ai",
     }
-    st.caption(f"Get a free key → [{key_links[provider]}]({key_links[provider]})")
+    if api_key:
+        st.success(f"✓ {provider} key saved")
+    else:
+        st.caption(f"[Get free key →]({key_links[provider]})")
 
     st.divider()
-    st.caption("🔵 numeric  🟢 categorical\n🟣 datetime  🟡 binary  ⚫ id")
+
+    # ── Step 3: Configure (only shown after upload) ──
+    target_col = None
+    do_clean   = False
+
+    if uploaded:
+        st.markdown("**③ Configure analysis**")
+        df_peek     = pd.read_csv(uploaded, nrows=5)
+        uploaded.seek(0)
+        col_options = ["— none —"] + list(df_peek.columns)
+        target_sel  = st.selectbox("🎯 Target variable", col_options, label_visibility="collapsed")
+        target_col  = None if target_sel == "— none —" else target_sel
+
+        do_clean = st.toggle("🧹 Auto-clean dataset", value=False)
+        if do_clean:
+            st.caption("Drops IDs & high-missing cols, imputes nulls, encodes binary, extracts dates, log-transforms skewed.")
+
+    st.divider()
+
+    # Legend
+    st.markdown("""
+    <div style="font-size:11px;color:#aaa;line-height:2">
+      🔵 numeric &nbsp; 🟢 categorical<br>
+      🟣 datetime &nbsp; 🟡 binary &nbsp; ⚫ id
+    </div>
+    """, unsafe_allow_html=True)
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Landing screen (no file) ──────────────────────────────────────────────────
 
 if not uploaded:
     st.markdown("""
-    <div style="text-align:center;padding:80px 0 40px">
-      <div style="font-size:40px;margin-bottom:16px">📊</div>
-      <div style="font-size:20px;font-weight:500;margin-bottom:8px">Auto EDA Tool</div>
-      <div style="font-size:14px;color:#888;margin-bottom:4px">Upload a CSV in the sidebar to get started</div>
-      <div style="font-size:13px;color:#aaa">Works with any AI provider — Gemini, ChatGPT, Claude, Grok</div>
+    <div style="max-width:560px;margin:60px auto 0;text-align:center">
+      <div style="font-size:48px;margin-bottom:20px">📊</div>
+      <div style="font-size:26px;font-weight:600;margin-bottom:10px;color:#1a1a1a">Auto EDA Tool</div>
+      <div style="font-size:15px;color:#666;margin-bottom:36px;line-height:1.6">
+        Upload any CSV and get instant analysis — smart type detection,
+        interactive charts, target variable analysis, auto-clean,
+        and an AI-written report.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left;margin-bottom:36px">
+        <div style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:16px">
+          <div style="font-size:20px;margin-bottom:6px">🔍</div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Smart profiling</div>
+          <div style="font-size:12px;color:#888">Auto-detects numeric, categorical, datetime, binary & ID columns</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:16px">
+          <div style="font-size:20px;margin-bottom:6px">📈</div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Rich charts</div>
+          <div style="font-size:12px;color:#888">Histograms, boxplots, bar charts, correlation matrix & missing map</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:16px">
+          <div style="font-size:20px;margin-bottom:6px">🎯</div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Target analysis</div>
+          <div style="font-size:12px;color:#888">Feature correlations, class balance & task type detection</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:16px">
+          <div style="font-size:20px;margin-bottom:6px">🧹</div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Auto-clean</div>
+          <div style="font-size:12px;color:#888">One-click imputation, encoding & feature engineering</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:#aaa">← Upload a CSV in the sidebar to begin</div>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
 
+
+# ── Data loaded ───────────────────────────────────────────────────────────────
+
 with st.spinner("Profiling dataset..."):
     df, profile = profile_csv(uploaded)
 
+# Header bar
+fname      = uploaded.name
+type_count = {}
+for m in profile["columns"].values():
+    type_count[m["type"]] = type_count.get(m["type"], 0) + 1
+type_str = "  ·  ".join(f"{v} {k}" for k, v in type_count.items())
+
+st.markdown(f"""
+<div style="background:#fff;border:1px solid #e8ecf0;border-radius:14px;
+     padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px">
+  <div style="font-size:24px">📄</div>
+  <div>
+    <div style="font-size:14px;font-weight:500;color:#1a1a1a">{fname}</div>
+    <div style="font-size:12px;color:#888;margin-top:2px">{type_str}</div>
+  </div>
+  {"<div style='margin-left:auto;background:#d4eaff;color:#185FA5;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:500'>🎯 Target: " + target_col + "</div>" if target_col else ""}
+  {"<div style='margin-left:" + ("8px" if target_col else "auto") + ";background:#d4f5e9;color:#0a5c3e;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:500'>🧹 Auto-clean on</div>" if do_clean else ""}
+</div>
+""", unsafe_allow_html=True)
+
+# Metrics
 m1, m2, m3, m4, m5 = st.columns(5)
-m1.metric("Rows",       f"{profile['shape'][0]:,}")
-m2.metric("Columns",    profile["shape"][1])
-m3.metric("Missing",    f"{sum(profile['missing'].values()):,}")
-m4.metric("Duplicates", profile["duplicates"])
-m5.metric("Memory",     f"{profile.get('memory_mb','?')} MB")
+m1.metric("Rows",        f"{profile['shape'][0]:,}")
+m2.metric("Columns",     profile["shape"][1])
+m3.metric("Missing",     f"{sum(profile['missing'].values()):,}")
+m4.metric("Duplicates",  profile["duplicates"])
+m5.metric("Size",        f"{profile.get('memory_mb','?')} MB")
 
-if target_col:
-    st.info(f"🎯 Target variable: **{target_col}**")
+st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
 
-st.divider()
-
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Columns", "Charts", "Target Analysis", "Auto-Clean", "AI Summary + Report"])
+# Tabs
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🗂 Columns", "📈 Charts", "🎯 Target Analysis",
+    "🧹 Auto-Clean", "🤖 AI Summary + Report"
+])
 
 
 # ── Tab 1: Columns ────────────────────────────────────────────────────────────
+
 with tab1:
-    type_colors = {"numeric": "🔵", "categorical": "🟢", "datetime": "🟣", "binary": "🟡", "id": "⚫"}
+    type_colors = {"numeric":"🔵","categorical":"🟢","datetime":"🟣","binary":"🟡","id":"⚫"}
+    total_missing = sum(profile["missing"].values())
+    if total_missing > 0:
+        st.markdown(f"""
+        <div class="card card-warn" style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;
+             padding:12px 16px;margin-bottom:16px;border-left:4px solid #E8963A">
+          ⚠️  <strong>{total_missing:,} missing values</strong> detected across {sum(1 for m in profile['missing'].values() if m > 0)} columns
+        </div>""", unsafe_allow_html=True)
+
     for col, meta in profile["columns"].items():
         t    = meta["type"]
         icon = type_colors.get(t, "⚪")
@@ -597,7 +783,7 @@ with tab1:
                 c3.metric("Outliers", f"{meta['outliers']} ({meta['outlier_pct']}%)")
                 st.dataframe(pd.DataFrame(meta["stats"], index=["value"]).T, use_container_width=True)
                 if meta["outliers"] > 0:
-                    st.warning(f"Skewness: {meta['skewness']} ({meta['skew_label']}) — {meta['outliers']} outliers")
+                    st.warning(f"Skewness: {meta['skewness']} ({meta['skew_label']}) — {meta['outliers']} outliers detected")
             elif t == "datetime":
                 st.write(f"**Range:** {meta['min']}  →  {meta['max']}")
                 st.write(f"**Span:** {meta['range_days']} days")
@@ -605,23 +791,28 @@ with tab1:
                 for val, pct in meta["values"].items():
                     st.write(f"`{val}` — {round(pct*100,1)}%")
             elif t == "id":
-                st.info(f"Likely an ID column ({meta['unique']} unique, {meta['unique_pct']}% of rows). Will be dropped in auto-clean.")
+                st.info(f"Likely an ID column ({meta['unique']} unique values, {meta['unique_pct']}% of rows). Will be dropped in auto-clean.")
             else:
-                st.write(f"**Unique:** {meta['unique']} ({meta['unique_pct']}% of rows)")
+                st.write(f"**Unique values:** {meta['unique']} ({meta['unique_pct']}% of rows)")
                 st.dataframe(pd.DataFrame.from_dict(meta["top5"], orient="index", columns=["count"]), use_container_width=True)
             if meta["nulls"] > 0:
                 st.warning(f"{meta['nulls']} missing values ({meta['null_pct']}% of rows)")
 
 
 # ── Tab 2: Charts ─────────────────────────────────────────────────────────────
+
 with tab2:
     with st.spinner("Generating charts..."):
         charts = generate_charts(df, profile)
+
     sections = {
-        "numeric": "Numeric distributions", "boxplot": "Boxplots",
-        "categorical": "Categorical breakdowns", "binary": "Binary splits",
-        "datetime": "Time series", "missing": "Missing value map",
-        "corr": "Correlation matrix",
+        "numeric":     "Numeric distributions",
+        "boxplot":     "Boxplots",
+        "categorical": "Categorical breakdowns",
+        "binary":      "Binary splits",
+        "datetime":    "Time series",
+        "missing":     "Missing value map",
+        "corr":        "Correlation matrix",
     }
     for type_key, section_title in sections.items():
         section_charts = [(k, c, f) for k, c, f in charts if k == type_key]
@@ -634,15 +825,34 @@ with tab2:
 
 
 # ── Tab 3: Target Analysis ────────────────────────────────────────────────────
+
 with tab3:
     if not target_col:
-        st.info("👈 Select a target variable in the sidebar to see target analysis.")
+        st.markdown("""
+        <div style="text-align:center;padding:48px 0">
+          <div style="font-size:36px;margin-bottom:12px">🎯</div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:6px">No target variable selected</div>
+          <div style="font-size:13px;color:#888">Choose a target column in the sidebar to see feature correlations,
+          class balance, and task type detection.</div>
+        </div>""", unsafe_allow_html=True)
     else:
         with st.spinner(f"Analysing target: {target_col}..."):
             task, t_charts, insights = analyze_target(df, profile, target_col)
-        st.markdown(f"**Task type detected:** `{task}`")
-        for ins in insights:
-            st.markdown(ins)
+
+        c1, c2 = st.columns([1, 3])
+        c1.markdown(f"""
+        <div style="background:#d4eaff;border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:11px;color:#185FA5;font-weight:500;text-transform:uppercase;letter-spacing:.06em">Task type</div>
+          <div style="font-size:20px;font-weight:600;color:#185FA5;margin-top:4px">{task.capitalize()}</div>
+        </div>""", unsafe_allow_html=True)
+
+        with c2:
+            for ins in insights:
+                st.markdown(f"""
+                <div style="background:#fff;border:1px solid #e8ecf0;border-radius:10px;
+                     padding:10px 16px;margin-bottom:8px;font-size:13px">{ins}</div>
+                """, unsafe_allow_html=True)
+
         st.divider()
         left, right = st.columns(2)
         for i, (_, col, fig) in enumerate(t_charts):
@@ -650,20 +860,37 @@ with tab3:
 
 
 # ── Tab 4: Auto-Clean ─────────────────────────────────────────────────────────
+
 with tab4:
     if not do_clean:
-        st.info("👈 Toggle **Clean & prepare dataset** in the sidebar to use this feature.")
+        st.markdown("""
+        <div style="text-align:center;padding:48px 0">
+          <div style="font-size:36px;margin-bottom:12px">🧹</div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:6px">Auto-clean is off</div>
+          <div style="font-size:13px;color:#888">Toggle <strong>Clean & prepare dataset</strong> in the sidebar
+          to automatically impute, encode, and transform your data.</div>
+        </div>""", unsafe_allow_html=True)
     else:
         with st.spinner("Cleaning dataset..."):
             cleaned_df, clean_log = auto_clean(df, profile, target_col)
-        st.success(f"Done — {df.shape[1]} cols, {len(df):,} rows → {cleaned_df.shape[1]} cols, {len(cleaned_df):,} rows")
+
+        ca, cb, cc = st.columns(3)
+        ca.metric("Columns before", df.shape[1])
+        cb.metric("Columns after",  cleaned_df.shape[1])
+        cc.metric("Rows after",     f"{len(cleaned_df):,}")
+
+        st.markdown("<div style='margin:16px 0 8px;font-size:13px;font-weight:500'>What was done:</div>", unsafe_allow_html=True)
         for entry in clean_log:
-            st.markdown(entry)
+            st.markdown(f"""
+            <div style="background:#fff;border:1px solid #e8ecf0;border-radius:8px;
+                 padding:8px 14px;margin-bottom:6px;font-size:13px">{entry}</div>
+            """, unsafe_allow_html=True)
+
         st.divider()
-        st.subheader("Preview")
+        st.subheader("Preview — first 20 rows")
         st.dataframe(cleaned_df.head(20), use_container_width=True)
         st.download_button(
-            label="Download cleaned CSV",
+            label="⬇️  Download cleaned CSV",
             data=cleaned_df.to_csv(index=False).encode("utf-8"),
             file_name="cleaned_data.csv",
             mime="text/csv",
@@ -671,22 +898,45 @@ with tab4:
 
 
 # ── Tab 5: AI Summary + Report ────────────────────────────────────────────────
+
 with tab5:
-    if not api_key:
-        st.info(f"👈 Enter your {provider} API key in the sidebar to generate the AI summary.")
+    if not st.session_state.api_key:
+        st.markdown(f"""
+        <div style="text-align:center;padding:48px 0">
+          <div style="font-size:36px;margin-bottom:12px">🤖</div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:6px">No API key yet</div>
+          <div style="font-size:13px;color:#888;margin-bottom:16px">
+            Add your {st.session_state.provider} API key in the sidebar to generate the AI analysis.
+          </div>
+        </div>""", unsafe_allow_html=True)
     else:
-        with st.spinner(f"Generating analysis with {provider} / {model}..."):
+        prov  = st.session_state.provider
+        mdl   = st.session_state.model
+        a_key = st.session_state.api_key
+
+        st.markdown(f"""
+        <div style="background:#fff;border:1px solid #e8ecf0;border-radius:10px;
+             padding:10px 16px;margin-bottom:16px;font-size:13px;color:#555">
+          Using <strong>{prov}</strong> / <code>{mdl}</code>
+          {"· 🎯 Target: <strong>" + target_col + "</strong>" if target_col else ""}
+        </div>""", unsafe_allow_html=True)
+
+        with st.spinner(f"Generating analysis with {prov}..."):
             try:
-                summary = generate_summary(profile, target_col, provider, api_key, model)
+                summary = generate_summary(profile, target_col, prov, a_key, mdl)
                 st.markdown(summary)
                 st.divider()
-                with st.spinner("Building report..."):
+                with st.spinner("Building downloadable report..."):
+                    if "charts" not in st.session_state:
+                        charts = generate_charts(df, profile)
                     html = build_html_report(df, profile, summary, charts, target_col)
+
+                st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
                 st.download_button(
-                    label="Download full report (.html)",
+                    label="⬇️  Download full report (.html)",
                     data=html,
                     file_name="eda_report.html",
                     mime="text/html",
                 )
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Error from {prov}: {e}")
