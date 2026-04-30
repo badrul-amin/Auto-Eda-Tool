@@ -1,3 +1,4 @@
+import os
 import json
 import base64
 import io
@@ -8,8 +9,6 @@ import plotly.express as px
 import google.generativeai as genai
 
 st.set_page_config(page_title="Auto EDA", layout="wide")
-
-API_KEY = "AIzaSyA0eLwOItEMlrKPekag2LWWCBsDCSRYt1Y"  # paste your Gemini key here
 
 
 # ── Profiler ──────────────────────────────────────────────────────────────────
@@ -47,7 +46,7 @@ def clean_layout():
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="system-ui, sans-serif", size=12, color="#555"),
-        title=dict(font=dict(size=14), x=0),
+        title=dict(font=dict(size=14, weight="normal"), x=0),
         margin=dict(l=0, r=0, t=40, b=0),
         xaxis=dict(showgrid=True, gridcolor="#f0f0f0", zeroline=False),
         yaxis=dict(showgrid=False, zeroline=False),
@@ -103,8 +102,8 @@ def generate_charts(_df, profile):
 # ── LLM Summary ───────────────────────────────────────────────────────────────
 
 @st.cache_data
-def generate_summary(profile):
-    genai.configure(api_key=API_KEY)
+def generate_summary(profile, api_key):
+    genai.configure(api_key=api_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = f"""You are a data analyst writing for a non-technical stakeholder.
 
@@ -207,9 +206,7 @@ if uploaded:
                 else:
                     st.write(f"Unique values: {meta['unique']}")
                     st.dataframe(
-                        pd.DataFrame.from_dict(
-                            meta["top5"], orient="index", columns=["count"]
-                        ),
+                        pd.DataFrame.from_dict(meta["top5"], orient="index", columns=["count"]),
                         use_container_width=True,
                     )
 
@@ -220,19 +217,27 @@ if uploaded:
             (left if i % 2 == 0 else right).plotly_chart(fig, use_container_width=True)
 
     with tab3:
-        with st.spinner("Analysing your data..."):
-            try:
-                summary = generate_summary(profile)
-                st.markdown(summary)
-                st.divider()
-                with st.spinner("Building report..."):
-                    charts = generate_charts(df, profile)
-                    html = build_html_report(df, profile, summary, charts)
-                st.download_button(
-                    label="Download report (.html)",
-                    data=html,
-                    file_name="eda_report.html",
-                    mime="text/html",
-                )
-            except Exception as e:
-                st.error(f"Error: {e}")
+        api_key = st.text_input(
+            "Gemini API key",
+            type="password",
+            placeholder="AIza... — free at aistudio.google.com",
+        )
+        if api_key:
+            with st.spinner("Analysing your data..."):
+                try:
+                    summary = generate_summary(profile, api_key)
+                    st.markdown(summary)
+                    st.divider()
+                    with st.spinner("Building report..."):
+                        charts = generate_charts(df, profile)
+                        html = build_html_report(df, profile, summary, charts)
+                    st.download_button(
+                        label="Download report (.html)",
+                        data=html,
+                        file_name="eda_report.html",
+                        mime="text/html",
+                    )
+                except Exception as e:
+                    st.error(f"Error: {e}")
+        else:
+            st.info("Enter your Gemini API key above to generate the AI summary + download the report.")
