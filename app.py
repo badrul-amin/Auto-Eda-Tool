@@ -40,7 +40,7 @@ NA_VALUES = [
     "None", "none", "NaN", "nan", "-", "--", "?",
     "missing", "MISSING", "unknown", "Unknown", "UNK", "#N/A", "#NULL!",
 ]
-ID_HINTS   = ["id", "uuid", "guid", "key", "ref", "index", "no", "num", "number", "code"]
+ID_HINTS = ["id", "uuid", "guid", "key", "ref", "index", "no", "num", "number", "code", "item", "sku", "barcode"]
 DATE_HINTS = ["date", "time", "datetime", "timestamp", "created", "updated", "at", "on"]
 CAT_HINTS  = ["type", "status", "category", "flag", "gender", "sex", "store", "region",
               "country", "zip", "postal", "grade", "class", "label", "group",
@@ -126,7 +126,15 @@ def profile_csv(uploaded_file):
         is_numeric   = pd.api.types.is_numeric_dtype(df[col])
         unique_ratio = n_unique / max(n_rows, 1)
 
-        name_is_id      = any(h == col_lower or col_lower.endswith(f"_{h}") or col_lower.startswith(f"{h}_") for h in ID_HINTS)
+        name_is_id  = any(
+          h == col_lower or
+          col_lower.endswith(f"_{h}") or
+          col_lower.startswith(f"{h}_") or
+          f"_{h}" in col_lower or
+          f"{h}_" in col_lower or
+          h in col_lower.split("_")
+          for h in ID_HINTS
+        )
         name_is_cat     = any(h in col_lower for h in CAT_HINTS)
         looks_like_id   = is_numeric and unique_ratio > 0.95 and n_unique > 100
         low_cardinality = is_numeric and n_unique <= 15
