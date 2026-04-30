@@ -420,39 +420,69 @@ def auto_clean(df, profile, target_col=None):
 # ── LLM Summary ───────────────────────────────────────────────────────────────
 
 @st.cache_data
-def generate_summary(profile, target_col, provider, api_key, model):
+def generate_summary(profile, target_col, provider, api_key, model, _df):
     target = f"The user selected `{target_col}` as the target variable." if target_col else "No target variable selected."
-    prompt = f"""You are a senior data scientist writing an EDA report.
+
+    # Send actual sample rows so the LLM can see real values
+    sample_rows = _df.head(10).to_string()
+    sample_stats = _df.describe(include="all").round(2).to_string()
+
+    # Build a smarter context
+    col_types = "\n".join(
+        f"- `{col}`: {meta['type']}  |  {meta['nulls']} nulls ({meta['null_pct']}%)"
+        + (f"  |  skewness: {meta.get('skewness','N/A')}  |  outliers: {meta.get('outliers','N/A')}" if meta['type'] == 'numeric' else "")
+        + (f"  |  top values: {list(meta.get('top5',{}).keys())}" if meta['type'] in ('categorical','id') else "")
+        for col, meta in profile["columns"].items()
+    )
+
+    prompt = f"""You are a senior data scientist doing exploratory data analysis.
 
 {target}
 
-Dataset profile:
-{json.dumps(profile, indent=2)}
+DATASET SHAPE: {profile['shape'][0]:,} rows × {profile['shape'][1]} columns
+MEMORY: {profile.get('memory_mb','?')} MB
+DUPLICATES: {profile['duplicates']}
 
-Write a concise but thorough EDA report in markdown with these sections:
+COLUMN SUMMARY:
+{col_types}
+
+ACTUAL DATA SAMPLE (first 10 rows):
+{sample_rows}
+
+DESCRIPTIVE STATISTICS:
+{sample_stats}
+
+Based on the ACTUAL data above, write a thorough EDA report in markdown:
 
 ## Overview
-Shape, memory, column type breakdown, overall data quality score (0-100).
+Dataset shape, what this data appears to be about (guess from column names and values), data quality score (0-100).
 
-## Data Quality
-Missing values per column with recommended imputation strategy. Duplicates. Suspicious columns.
+## Data Quality Issues
+- List every column with missing values, how many, and exact recommended fix
+- Flag any columns with suspicious values, outliers, or wrong types
+- Note duplicates
 
-## Key Patterns
-Numeric distributions and skewness. Categorical breakdowns. Datetime trends. Binary splits.
+## Key Patterns & Insights
+- What do the actual values tell you? Look at the real sample data
+- Numeric columns: distribution shape, notable outliers, value ranges
+- Categorical columns: dominant categories, rare categories, imbalance
+- Any obvious business insights from the data (e.g. if it's sales data, comment on sales patterns)
 
 ## Target Variable Analysis
-(Only if target provided) Task type, class balance, strongest predictors, risks.
+Only if target is provided: task type, class balance, which features look most predictive and why.
 
 ## Feature Engineering Suggestions
-4-5 concrete suggestions with actual column names.
+5 concrete suggestions referencing actual column names. Be specific — e.g. "extract month from `Order Date` to capture seasonality".
 
 ## Modelling Readiness
-What still needs doing. Leakage risks. Recommended algorithm family.
+Exact steps needed before training. Call out leakage risks by column name. Recommend specific algorithm.
 
-Mention actual column names. Be specific. Under 700 words."""
+## Anomalies & Watch-outs
+Anything unusual spotted in the actual data sample — weird values, impossible combinations, potential data entry errors.
+
+Be specific. Reference actual values you see in the data. Think like a data scientist who just opened this file in pandas."""
 
     return call_llm(prompt, provider, api_key, model)
-
 
 # ── HTML Report ───────────────────────────────────────────────────────────────
 
@@ -819,7 +849,7 @@ with tab5:
 
         with st.spinner(f"Generating analysis with {prov}..."):
             try:
-                summary = generate_summary(profile, target_col, prov, a_key, mdl)
+                summary = generate_summary(profile, target_col, prov, a_key, mdl, _df=df)
                 st.markdown(summary)
                 st.divider()
                 with st.spinner("Building downloadable report..."):
