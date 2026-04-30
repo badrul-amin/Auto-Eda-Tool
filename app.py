@@ -9,7 +9,7 @@ import google.generativeai as genai
 
 st.set_page_config(page_title="Auto EDA", layout="wide")
 
-API_KEY = "AIza..."  # paste your Gemini key here
+API_KEY = "AIzaSyA0eLwOItEMlrKPekag2LWWCBsDCSRYt1Y"  # paste your Gemini key here
 
 
 # ── Profiler ──────────────────────────────────────────────────────────────────
