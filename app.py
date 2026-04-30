@@ -229,7 +229,7 @@ def generate_charts(_df, profile):
         fig = go.Figure()
         fig.add_trace(go.Histogram(x=_df[col].dropna(), nbinsx=30,
                                    marker_color="#378ADD", opacity=0.85, name=col))
-        fig.update_layout(**clean_layout(), title=f"Distribution: {col}")
+        # Pass the title directly into the function call, and let it merge layout_settings = clean_layout() layout_settings['title']['text'] = f"Distribution: {col}" fig.update_layout(layout_settings)
         charts.append(("numeric", col, fig))
         fig2 = go.Figure()
         fig2.add_trace(go.Box(x=_df[col].dropna(), marker_color="#378ADD", boxmean=True, name=col))
