@@ -15,46 +15,24 @@ st.set_page_config(page_title="Auto EDA", layout="wide", initial_sidebar_state="
 
 st.markdown("""
 <style>
-  /* Base */
-  .stApp { background: #f4f6f9; }
-  .block-container { padding-top: 1.5rem !important; }
-
-  /* Sidebar */
-  [data-testid="stSidebar"] {
-    background: #ffffff;
-    border-right: 1px solid #e8ecf0;
-    padding-top: 0 !important;
-  }
-
-  /* FIX: Sidebar toggle button — keeps it visible when sidebar is closed */
-  [data-testid="stSidebarCollapseButton"] {
-    background-color: #378ADD !important;
-    border-radius: 0 8px 8px 0 !important;
-    color: white !important;
-    display: flex !important;
-    visibility: visible !important;
-  }
-  
-  /* Styling for the icon inside the button */
-  [data-testid="stSidebarCollapseButton"] svg {
-    fill: white !important;
-    color: white !important;
-  }
-
-  /* Hide default chrome BUT keep the toggle button functional */
-  #MainMenu, footer { visibility: hidden; }
+  .stApp { background: #f4f6f9; }
+  .block-container { padding-top: 1.5rem !important; }
+  [data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e8ecf0; padding-top: 0 !important; }
+  [data-testid="stSidebarCollapseButton"] { background-color: #378ADD !important; border-radius: 0 8px 8px 0 !important; color: white !important; display: flex !important; visibility: visible !important; }
+  [data-testid="stSidebarCollapseButton"] svg { fill: white !important; color: white !important; }
+  #MainMenu, footer { visibility: hidden; }
   header { visibility: hidden; }
-  header > div:first-child { visibility: visible !important; }
-
-  /* Cards */
-  .card {
-    background: #ffffff;
-    border: 1px solid #e8ecf0;
-    border-radius: 14px;
-    padding: 20px 24px;
-    margin-bottom: 16px;
-  }
-  /* ... keep the rest of your card, step, and metric styles here ... */
+  [data-testid="stMetric"] { background: #ffffff; border: 1px solid #e8ecf0; border-radius: 12px; padding: 16px 18px !important; }
+  [data-testid="stMetricLabel"] { font-size: 12px !important; color: #888 !important; }
+  [data-testid="stMetricValue"] { font-size: 24px !important; font-weight: 500 !important; }
+  .stTabs [data-baseweb="tab-list"] { background: #ffffff; border-radius: 12px; padding: 4px; border: 1px solid #e8ecf0; gap: 2px; }
+  .stTabs [data-baseweb="tab"] { font-size: 13px; font-weight: 500; color: #888; padding: 8px 18px; border-radius: 8px; }
+  .stTabs [aria-selected="true"] { background: #378ADD !important; color: white !important; }
+  .stButton > button { border-radius: 8px; font-size: 13px; font-weight: 500; padding: 8px 20px; background: #378ADD; color: white !important; border: none; }
+  .stButton > button:hover { background: #2567b8 !important; }
+  .stDownloadButton > button { border-radius: 8px; font-size: 13px; font-weight: 500; padding: 10px 20px; background: #1D9E75; color: white !important; border: none; }
+  .stDownloadButton > button:hover { background: #157a5a !important; }
+  .streamlit-expanderHeader { background: #ffffff !important; border-radius: 10px !important; font-size: 13px; font-weight: 500; border: 1px solid #e8ecf0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -80,14 +58,9 @@ PROVIDERS = {
 }
 
 
-# ── Session state defaults ────────────────────────────────────────────────────
+# ── Session state ─────────────────────────────────────────────────────────────
 
-for key, val in {
-    "provider": "Gemini",
-    "model":    "gemini-1.5-flash",
-    "api_key":  "",
-    "step":     1,
-}.items():
+for key, val in {"provider": "Gemini", "model": "gemini-1.5-flash", "api_key": "", "step": 1}.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
@@ -103,20 +76,20 @@ def call_llm(prompt, provider, api_key, model):
     elif provider == "OpenAI / ChatGPT":
         from openai import OpenAI
         r = OpenAI(api_key=api_key).chat.completions.create(
-            model=model, messages=[{"role":"user","content":prompt}], max_tokens=1500)
+            model=model, messages=[{"role": "user", "content": prompt}], max_tokens=1500)
         return r.choices[0].message.content
 
     elif provider == "Claude (Anthropic)":
         import anthropic
         r = anthropic.Anthropic(api_key=api_key).messages.create(
             model=model, max_tokens=1500,
-            messages=[{"role":"user","content":prompt}])
+            messages=[{"role": "user", "content": prompt}])
         return r.content[0].text
 
     elif provider == "Grok (xAI)":
         from openai import OpenAI
         r = OpenAI(api_key=api_key, base_url="https://api.x.ai/v1").chat.completions.create(
-            model=model, messages=[{"role":"user","content":prompt}], max_tokens=1500)
+            model=model, messages=[{"role": "user", "content": prompt}], max_tokens=1500)
         return r.choices[0].message.content
 
     raise ValueError(f"Unknown provider: {provider}")
@@ -141,11 +114,11 @@ def profile_csv(uploaded_file):
 
     n_rows  = len(df)
     profile = {
-        "shape":     list(df.shape),
-        "columns":   {},
-        "missing":   {c: int(df[c].isnull().sum()) for c in df.columns},
+        "shape":      list(df.shape),
+        "columns":    {},
+        "missing":    {c: int(df[c].isnull().sum()) for c in df.columns},
         "duplicates": int(df.duplicated().sum()),
-        "memory_mb": round(df.memory_usage(deep=True).sum() / 1e6, 2),
+        "memory_mb":  round(df.memory_usage(deep=True).sum() / 1e6, 2),
     }
 
     for col in df.columns:
@@ -157,8 +130,8 @@ def profile_csv(uploaded_file):
         is_numeric   = pd.api.types.is_numeric_dtype(df[col])
         unique_ratio = n_unique / max(n_rows, 1)
 
-        name_is_id  = any(h == col_lower or col_lower.endswith(f"_{h}") or col_lower.startswith(f"{h}_") for h in ID_HINTS)
-        name_is_cat = any(h in col_lower for h in CAT_HINTS)
+        name_is_id      = any(h == col_lower or col_lower.endswith(f"_{h}") or col_lower.startswith(f"{h}_") for h in ID_HINTS)
+        name_is_cat     = any(h in col_lower for h in CAT_HINTS)
         looks_like_id   = is_numeric and unique_ratio > 0.95 and n_unique > 100
         low_cardinality = is_numeric and n_unique <= 15
         is_binary       = n_unique == 2
@@ -175,7 +148,7 @@ def profile_csv(uploaded_file):
             series     = df[col].dropna()
             q1, q3     = series.quantile(0.25), series.quantile(0.75)
             iqr        = q3 - q1
-            n_out      = int(((series < q1 - 1.5*iqr) | (series > q3 + 1.5*iqr)).sum())
+            n_out      = int(((series < q1 - 1.5 * iqr) | (series > q3 + 1.5 * iqr)).sum())
             skewness   = round(float(series.skew()), 3)
             skew_label = "right-skewed" if skewness > 1 else "left-skewed" if skewness < -1 else "symmetric"
             profile["columns"][col] = {
@@ -226,14 +199,25 @@ def generate_charts(_df, profile):
     date_cols = [c for c, m in profile["columns"].items() if m["type"] == "datetime"]
 
     for col in num_cols:
+        # Histogram
         fig = go.Figure()
-        fig.add_trace(go.Histogram(x=_df[col].dropna(), nbinsx=30,
-                                   marker_color="#378ADD", opacity=0.85, name=col))
-        # Pass the title directly into the function call, and let it merge layout_settings = clean_layout() layout_settings['title']['text'] = f"Distribution: {col}" fig.update_layout(layout_settings)
+        fig.add_trace(go.Histogram(
+            x=_df[col].dropna(), nbinsx=30,
+            marker_color="#378ADD", opacity=0.85, name=col,
+        ))
+        layout = clean_layout()
+        layout["title"] = {"text": f"Distribution: {col}", "font": {"size": 13}, "x": 0}
+        fig.update_layout(**layout)
         charts.append(("numeric", col, fig))
+
+        # Boxplot
         fig2 = go.Figure()
-        fig2.add_trace(go.Box(x=_df[col].dropna(), marker_color="#378ADD", boxmean=True, name=col))
-        fig2.update_layout(**clean_layout(height=200), title=f"Boxplot: {col}")
+        fig2.add_trace(go.Box(
+            x=_df[col].dropna(), marker_color="#378ADD", boxmean=True, name=col,
+        ))
+        layout2 = clean_layout(height=200)
+        layout2["title"] = {"text": f"Boxplot: {col}", "font": {"size": 13}, "x": 0}
+        fig2.update_layout(**layout2)
         charts.append(("boxplot", col, fig2))
 
     for col in cat_cols:
@@ -247,9 +231,13 @@ def generate_charts(_df, profile):
 
     for col in bin_cols:
         vals = profile["columns"][col]["values"]
-        fig  = go.Figure(go.Pie(labels=list(vals.keys()), values=list(vals.values()),
-                                hole=0.55, marker_colors=["#378ADD", "#E8F3FB"]))
-        fig.update_layout(**clean_layout(height=240), title=f"Split: {col}")
+        fig  = go.Figure(go.Pie(
+            labels=list(vals.keys()), values=list(vals.values()),
+            hole=0.55, marker_colors=["#378ADD", "#E8F3FB"],
+        ))
+        layout3 = clean_layout(height=240)
+        layout3["title"] = {"text": f"Split: {col}", "font": {"size": 13}, "x": 0}
+        fig.update_layout(**layout3)
         charts.append(("binary", col, fig))
 
     for col in date_cols:
@@ -293,7 +281,7 @@ def analyze_target(df, profile, target_col):
     charts   = []
     insights = []
 
-    task = "classification" if t_type in ("binary","categorical") or \
+    task = "classification" if t_type in ("binary", "categorical") or \
            (t_type == "numeric" and df[target_col].nunique() <= 15) else "regression"
 
     if task == "classification":
@@ -318,10 +306,13 @@ def analyze_target(df, profile, target_col):
         fig.update_layout(**clean_layout())
         charts.append(("target_dist", target_col, fig))
         skew = round(float(df[target_col].skew()), 3)
-        insights.append(f"{'⚠️ Target is skewed (' + str(skew) + '). Consider log-transform.' if abs(skew) > 1 else '✅ Target distribution looks reasonable (skewness: ' + str(skew) + ').'}")
+        if abs(skew) > 1:
+            insights.append(f"⚠️ Target is skewed ({skew}). Consider log-transform.")
+        else:
+            insights.append(f"✅ Target distribution looks reasonable (skewness: {skew}).")
 
     num_cols = [c for c, m in profile["columns"].items() if m["type"] == "numeric" and c != target_col]
-    cat_cols = [c for c, m in profile["columns"].items() if m["type"] in ("categorical","binary") and c != target_col]
+    cat_cols = [c for c, m in profile["columns"].items() if m["type"] in ("categorical", "binary") and c != target_col]
 
     if num_cols:
         try:
@@ -384,10 +375,10 @@ def auto_clean(df, profile, target_col=None):
                 and cleaned[c].isnull().any()]:
         med = cleaned[col].median()
         cleaned[col].fillna(med, inplace=True)
-        log.append(f"🔧 Imputed `{col}` with median ({round(med,3)})")
+        log.append(f"🔧 Imputed `{col}` with median ({round(med, 3)})")
 
     for col in [c for c in cleaned.columns if c in profile["columns"]
-                and profile["columns"][c]["type"] in ("categorical","binary")
+                and profile["columns"][c]["type"] in ("categorical", "binary")
                 and cleaned[c].isnull().any()]:
         mode = cleaned[col].mode()[0]
         cleaned[col].fillna(mode, inplace=True)
@@ -403,7 +394,7 @@ def auto_clean(df, profile, target_col=None):
     for col in [c for c in cleaned.columns if c in profile["columns"]
                 and profile["columns"][c]["type"] == "binary" and c != target_col]:
         vals = cleaned[col].dropna().unique()
-        if set(vals) != {0,1}:
+        if set(vals) != {0, 1}:
             cleaned[col] = (cleaned[col] == vals[0]).astype(int)
             log.append(f"🔢 Encoded `{col}` as 0/1")
 
@@ -493,7 +484,8 @@ def build_html_report(df, profile, summary, charts, target_col=None):
   .metric-val {{ font-size: 26px; font-weight: 500; margin: 0; }}
   .metric-lbl {{ font-size: 12px; color: #888; margin: 4px 0 0; }}
   .summary {{ font-size: 14px; background: #f9f9f9; padding: 20px 24px; border-radius: 8px; }}
-  ul {{ margin: 6px 0; padding-left: 20px; }} li {{ margin-bottom: 4px; font-size: 14px; }}
+  ul {{ margin: 6px 0; padding-left: 20px; }}
+  li {{ margin-bottom: 4px; font-size: 14px; }}
   code {{ background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 13px; }}
 </style></head><body>
 <h1>EDA Report</h1>
@@ -520,13 +512,11 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Step 1: Upload ──
     st.markdown("**① Upload your dataset**")
     uploaded = st.file_uploader("CSV file", type=["csv"], label_visibility="collapsed")
 
     st.divider()
 
-    # ── Step 2: AI Provider ──
     st.markdown("**② AI provider**")
     provider = st.selectbox("Provider", list(PROVIDERS.keys()),
                             index=list(PROVIDERS.keys()).index(st.session_state.provider),
@@ -556,7 +546,6 @@ with st.sidebar:
 
     st.divider()
 
-    # ── Step 3: Configure (only shown after upload) ──
     target_col = None
     do_clean   = False
 
@@ -573,8 +562,6 @@ with st.sidebar:
             st.caption("Drops IDs & high-missing cols, imputes nulls, encodes binary, extracts dates, log-transforms skewed.")
 
     st.divider()
-
-    # Legend
     st.markdown("""
     <div style="font-size:11px;color:#aaa;line-height:2">
       🔵 numeric &nbsp; 🟢 categorical<br>
@@ -583,7 +570,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 
-# ── Landing screen (no file) ──────────────────────────────────────────────────
+# ── Landing screen ────────────────────────────────────────────────────────────
 
 if not uploaded:
     st.markdown("""
@@ -623,12 +610,11 @@ if not uploaded:
     st.stop()
 
 
-# ── Data loaded ───────────────────────────────────────────────────────────────
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 with st.spinner("Profiling dataset..."):
     df, profile = profile_csv(uploaded)
 
-# Header bar
 fname      = uploaded.name
 type_count = {}
 for m in profile["columns"].values():
@@ -648,17 +634,15 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Metrics
 m1, m2, m3, m4, m5 = st.columns(5)
-m1.metric("Rows",        f"{profile['shape'][0]:,}")
-m2.metric("Columns",     profile["shape"][1])
-m3.metric("Missing",     f"{sum(profile['missing'].values()):,}")
-m4.metric("Duplicates",  profile["duplicates"])
-m5.metric("Size",        f"{profile.get('memory_mb','?')} MB")
+m1.metric("Rows",       f"{profile['shape'][0]:,}")
+m2.metric("Columns",    profile["shape"][1])
+m3.metric("Missing",    f"{sum(profile['missing'].values()):,}")
+m4.metric("Duplicates", profile["duplicates"])
+m5.metric("Size",       f"{profile.get('memory_mb','?')} MB")
 
 st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
 
-# Tabs
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🗂 Columns", "📈 Charts", "🎯 Target Analysis",
     "🧹 Auto-Clean", "🤖 AI Summary + Report"
@@ -668,13 +652,14 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # ── Tab 1: Columns ────────────────────────────────────────────────────────────
 
 with tab1:
-    type_colors = {"numeric":"🔵","categorical":"🟢","datetime":"🟣","binary":"🟡","id":"⚫"}
+    type_colors   = {"numeric": "🔵", "categorical": "🟢", "datetime": "🟣", "binary": "🟡", "id": "⚫"}
     total_missing = sum(profile["missing"].values())
     if total_missing > 0:
         st.markdown(f"""
-        <div class="card card-warn" style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;
+        <div style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;
              padding:12px 16px;margin-bottom:16px;border-left:4px solid #E8963A">
-          ⚠️  <strong>{total_missing:,} missing values</strong> detected across {sum(1 for m in profile['missing'].values() if m > 0)} columns
+          ⚠️ <strong>{total_missing:,} missing values</strong> detected across
+          {sum(1 for m in profile['missing'].values() if m > 0)} columns
         </div>""", unsafe_allow_html=True)
 
     for col, meta in profile["columns"].items():
@@ -825,7 +810,7 @@ with tab5:
         <div style="background:#fff;border:1px solid #e8ecf0;border-radius:10px;
              padding:10px 16px;margin-bottom:16px;font-size:13px;color:#555">
           Using <strong>{prov}</strong> / <code>{mdl}</code>
-          {"· 🎯 Target: <strong>" + target_col + "</strong>" if target_col else ""}
+          {"&nbsp;·&nbsp; 🎯 Target: <strong>" + target_col + "</strong>" if target_col else ""}
         </div>""", unsafe_allow_html=True)
 
         with st.spinner(f"Generating analysis with {prov}..."):
@@ -834,11 +819,7 @@ with tab5:
                 st.markdown(summary)
                 st.divider()
                 with st.spinner("Building downloadable report..."):
-                    if "charts" not in st.session_state:
-                        charts = generate_charts(df, profile)
                     html = build_html_report(df, profile, summary, charts, target_col)
-
-                st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
                 st.download_button(
                     label="⬇️  Download full report (.html)",
                     data=html,
