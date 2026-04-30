@@ -677,8 +677,8 @@ m5.metric("Size",       f"{profile.get('memory_mb','?')} MB")
 
 st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🗂 Columns", "📈 Charts", "🎯 Target Analysis",
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "🗂 Columns", "📈 Charts", "🔬 Explore", "🎯 Target Analysis",
     "🧹 Auto-Clean", "🤖 AI Summary + Report"
 ])
 
@@ -749,10 +749,204 @@ with tab2:
         for i, (_, col, fig) in enumerate(section_charts):
             (left if i % 2 == 0 else right).plotly_chart(fig, use_container_width=True)
 
-
-# ── Tab 3: Target Analysis ────────────────────────────────────────────────────
+# ── Tab 3: Explore ────────────────────────────────────────────────────────────
 
 with tab3:
+    st.markdown("#### Custom chart explorer")
+    st.caption("Pick any two columns and chart type — find your own insights.")
+
+    all_cols = list(profile["columns"].keys())
+    num_cols = [c for c, m in profile["columns"].items() if m["type"] == "numeric"]
+    cat_cols = [c for c, m in profile["columns"].items() if m["type"] in ("categorical", "binary")]
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        chart_type = st.selectbox("Chart type", [
+            "Scatter plot",
+            "Box plot (cat vs num)",
+            "Bar chart (mean)",
+            "Histogram",
+            "Line chart",
+            "Violin plot",
+            "Heatmap (2 categoricals)",
+        ])
+
+    with c2:
+        x_col = st.selectbox("X axis", all_cols, index=0)
+
+    with c3:
+        remaining = [c for c in all_cols if c != x_col]
+        y_col = st.selectbox("Y axis", ["— none —"] + remaining, index=0)
+        y_col = None if y_col == "— none —" else y_col
+
+    # Optional color grouping
+    color_col = st.selectbox(
+        "Color / group by (optional)",
+        ["— none —"] + cat_cols,
+        index=0,
+    )
+    color_col = None if color_col == "— none —" else color_col
+
+    st.divider()
+
+    try:
+        fig = None
+
+        if chart_type == "Scatter plot":
+            if not y_col:
+                st.warning("Pick a Y axis for scatter plot.")
+            else:
+                fig = px.scatter(
+                    df, x=x_col, y=y_col, color=color_col,
+                    opacity=0.6, trendline="ols" if x_col in num_cols and y_col in num_cols else None,
+                    title=f"{x_col} vs {y_col}",
+                    color_discrete_sequence=px.colors.qualitative.Set2,
+                )
+                # Insight
+                if x_col in num_cols and y_col in num_cols:
+                    corr = round(float(df[[x_col, y_col]].corr().iloc[0, 1]), 3)
+                    strength = "strong" if abs(corr) > 0.7 else "moderate" if abs(corr) > 0.4 else "weak"
+                    direction = "positive" if corr > 0 else "negative"
+                    st.markdown(f"""
+                    <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;
+                         padding:10px 14px;margin-bottom:12px;font-size:13px">
+                      📊 Correlation: <strong>{corr}</strong> — {strength} {direction} relationship
+                    </div>""", unsafe_allow_html=True)
+
+        elif chart_type == "Box plot (cat vs num)":
+            if not y_col:
+                st.warning("Pick a Y axis (numeric) for box plot.")
+            else:
+                fig = px.box(
+                    df, x=x_col, y=y_col, color=color_col,
+                    title=f"{y_col} distribution by {x_col}",
+                    color_discrete_sequence=px.colors.qualitative.Set2,
+                )
+                # Insight
+                if y_col in num_cols:
+                    grp_means = df.groupby(x_col)[y_col].mean().sort_values(ascending=False)
+                    best  = grp_means.index[0]
+                    worst = grp_means.index[-1]
+                    st.markdown(f"""
+                    <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;
+                         padding:10px 14px;margin-bottom:12px;font-size:13px">
+                      📊 Highest mean <code>{y_col}</code>: <strong>{best}</strong> ({round(grp_means[best],2)})
+                      &nbsp;·&nbsp; Lowest: <strong>{worst}</strong> ({round(grp_means[worst],2)})
+                    </div>""", unsafe_allow_html=True)
+
+        elif chart_type == "Bar chart (mean)":
+            if not y_col:
+                st.warning("Pick a Y axis (numeric) for bar chart.")
+            else:
+                grp = df.groupby(x_col)[y_col].mean().reset_index().sort_values(y_col, ascending=False).head(20)
+                fig = px.bar(
+                    grp, x=x_col, y=y_col,
+                    title=f"Mean {y_col} by {x_col}",
+                    color_discrete_sequence=["#378ADD"],
+                )
+                st.markdown(f"""
+                <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;
+                     padding:10px 14px;margin-bottom:12px;font-size:13px">
+                  📊 Showing mean <code>{y_col}</code> per <code>{x_col}</code> — top 20 categories
+                </div>""", unsafe_allow_html=True)
+
+        elif chart_type == "Histogram":
+            fig = px.histogram(
+                df, x=x_col, color=color_col,
+                nbins=30, barmode="overlay",
+                title=f"Distribution of {x_col}",
+                color_discrete_sequence=px.colors.qualitative.Set2,
+                opacity=0.75,
+            )
+            if x_col in num_cols:
+                skew = round(float(df[x_col].skew()), 3)
+                skew_label = "right-skewed — consider log transform" if skew > 1 else "left-skewed" if skew < -1 else "approximately normal"
+                st.markdown(f"""
+                <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;
+                     padding:10px 14px;margin-bottom:12px;font-size:13px">
+                  📊 Skewness: <strong>{skew}</strong> — {skew_label}
+                </div>""", unsafe_allow_html=True)
+
+        elif chart_type == "Line chart":
+            if not y_col:
+                st.warning("Pick a Y axis for line chart.")
+            else:
+                line_df = df[[x_col, y_col] + ([color_col] if color_col else [])].dropna().sort_values(x_col)
+                fig = px.line(
+                    line_df, x=x_col, y=y_col, color=color_col,
+                    title=f"{y_col} over {x_col}",
+                    color_discrete_sequence=px.colors.qualitative.Set2,
+                )
+
+        elif chart_type == "Violin plot":
+            if not y_col:
+                st.warning("Pick a Y axis (numeric) for violin plot.")
+            else:
+                fig = px.violin(
+                    df, x=x_col, y=y_col, color=color_col,
+                    box=True, points="outliers",
+                    title=f"{y_col} by {x_col}",
+                    color_discrete_sequence=px.colors.qualitative.Set2,
+                )
+
+        elif chart_type == "Heatmap (2 categoricals)":
+            if not y_col:
+                st.warning("Pick a Y axis for heatmap.")
+            else:
+                pivot = df.groupby([x_col, y_col]).size().reset_index(name="count")
+                pivot = pivot.pivot(index=y_col, columns=x_col, values="count").fillna(0)
+                fig = px.imshow(
+                    pivot, text_auto=True,
+                    color_continuous_scale="Blues",
+                    title=f"Count heatmap: {x_col} × {y_col}",
+                    aspect="auto",
+                )
+
+        if fig:
+            layout = clean_layout(height=420)
+            layout["title"] = {"text": fig.layout.title.text, "font": {"size": 14}, "x": 0}
+            fig.update_layout(**layout)
+            st.plotly_chart(fig, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Chart error: {e} — try a different column combination.")
+
+    # ── Ask AI about this chart ───────────────────────────────────────────
+    if y_col and st.session_state.get("api_key"):
+        st.divider()
+        if st.button("🤖 Ask AI to explain this chart", key="explain_chart"):
+            with st.spinner("Analysing..."):
+                try:
+                    explain_prompt = f"""You are a data analyst. A user is exploring a dataset and plotted:
+- Chart type: {chart_type}
+- X axis: {x_col} ({profile['columns'].get(x_col, {}).get('type', 'unknown')})
+- Y axis: {y_col} ({profile['columns'].get(y_col, {}).get('type', 'unknown')})
+- Color group: {color_col}
+- Dataset: {profile['shape'][0]:,} rows
+
+Sample data for these columns:
+{df[[c for c in [x_col, y_col, color_col] if c]].head(20).to_string()}
+
+In 3-5 bullet points, explain:
+- What pattern or insight this chart reveals
+- Whether the relationship is expected or surprising
+- What business action or next analysis step this suggests
+Be specific. Reference actual values."""
+
+                    insight = call_llm(explain_prompt, st.session_state.provider,
+                                       st.session_state.api_key, st.session_state.model)
+                    st.markdown(f"""
+                    <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:10px;
+                         padding:16px 20px;font-size:13px;margin-top:8px">
+                    {insight}
+                    </div>""", unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+# ── Tab 4: Target Analysis ────────────────────────────────────────────────────
+
+with tab4:
     if not target_col:
         st.markdown("""
         <div style="text-align:center;padding:48px 0">
@@ -785,9 +979,9 @@ with tab3:
             (left if i % 2 == 0 else right).plotly_chart(fig, use_container_width=True)
 
 
-# ── Tab 4: Auto-Clean ─────────────────────────────────────────────────────────
+# ── Tab 5: Auto-Clean ─────────────────────────────────────────────────────────
 
-with tab4:
+with tab5:
     if not do_clean:
         st.markdown("""
         <div style="text-align:center;padding:48px 0">
@@ -823,9 +1017,9 @@ with tab4:
         )
 
 
-# ── Tab 5: AI Summary + Report ────────────────────────────────────────────────
+# ── Tab 6: AI Summary + Report ────────────────────────────────────────────────
 
-with tab5:
+with tab6:
     if not st.session_state.api_key:
         st.markdown(f"""
         <div style="text-align:center;padding:48px 0">
